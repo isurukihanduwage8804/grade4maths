@@ -1,29 +1,53 @@
 import streamlit as st
-import random
 
 # 1. පිටුවේ මූලික සැකසුම්
 st.set_page_config(page_title="Grade 4 Maths Master", page_icon="🧮", layout="centered")
 
-# --- CSS Styling (Graphic පෙනුම සඳහා) ---
+# --- CSS Styling (විශාල අකුරු සහ කැපී පෙනෙන වර්ණ සඳහා) ---
 st.markdown("""
 <style>
-    .stApp { background-color: #0f172a; }
+    .stApp { background-color: #020617; } /* තද කළු/නිල් පසුබිම */
+    
+    /* ප්‍රශ්න පත්‍රයේ කොටුව */
     .q-card {
         background: #1e293b;
-        padding: 20px;
+        padding: 25px;
         border-radius: 15px;
-        border-left: 8px solid #facc15;
-        margin-bottom: 25px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        border-left: 10px solid #facc15; /* කහ පාට තීරුව */
+        margin-bottom: 30px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     }
-    .question-text { color: #ffffff; font-size: 20px; font-weight: bold; }
+    
+    /* ප්‍රශ්නයේ අකුරු */
+    .question-text { 
+        color: #ffffff; 
+        font-size: 26px; /* අකුරු ලොකු කළා */
+        font-weight: bold;
+        line-height: 1.5;
+    }
+
+    /* බහුවරණ උත්තර වල අකුරු දෙගුණයකින් ලොකු කිරීම */
+    div[data-testid="stMarkdownContainer"] p {
+        font-size: 24px !important; /* උත්තර වල අකුරු විශාලත්වය */
+        color: #facc15 !important; /* කැපී පෙනෙන කහ වර්ණය */
+        font-weight: bold;
+    }
+
+    /* Radio Button එක ඇතුළේ අකුරු පාලනය */
+    div[data-testid="stWidgetLabel"] p {
+        font-size: 24px !important;
+        color: #ffffff !important;
+    }
+    
+    /* ස්කෝර් එක පෙන්වන කොටුව */
     .score-container {
-        position: fixed; top: 50px; right: 20px;
-        background: #ff0000; color: white; padding: 15px;
-        border-radius: 10px; font-weight: bold; z-index: 1000;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        position: fixed; top: 20px; right: 20px;
+        background: #ef4444; color: white; padding: 20px;
+        border-radius: 15px; font-size: 22px; font-weight: bold;
+        z-index: 1000; border: 3px solid #ffffff;
     }
-    h1 { color: #facc15 !important; text-align: center; text-shadow: 2px 2px #000; }
+
+    h1 { color: #facc15 !important; text-align: center; font-size: 40px !important; text-shadow: 3px 3px #000; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -33,9 +57,9 @@ if 'score' not in st.session_state:
 if 'answered' not in st.session_state:
     st.session_state.answered = set()
 
-# --- සම්පූර්ණ ප්‍රශ්න 50 (PDF එක ඇසුරින්) ---
+# --- ප්‍රශ්න 50 ---
 QUESTIONS = [
-    {"q": "8052 සංඛ්‍යාව අකුරෙන් ලියන්න.", "options": ["අටදහස් පනස් දෙක", "අටදහස් පන්සිය දෙක", "අටදහස් පන්සිය විස්ස"], "a": "අටදහස් පනස් දෙක"},
+    {"q": "8052 සංඛ්‍යාව අකුරෙන් ලියූ විට?", "options": ["අටදහස් පනස් දෙක", "අටදහස් පන්සිය දෙක", "අටදහස් පන්සිය විස්ස"], "a": "අටදහස් පනස් දෙක"},
     {"q": "450 + 320 හි නිවැරදි පිළිතුර කුමක්ද?", "options": ["770", "870", "750"], "a": "770"},
     {"q": "900 - 450 හි පිළිතුර කුමක්ද?", "options": ["450", "550", "350"], "a": "450"},
     {"q": "ත්‍රිකෝණයකට ශීර්ෂ (මුළු) කීයක් තිබේද?", "options": ["2", "3", "4"], "a": "3"},
@@ -82,37 +106,4 @@ QUESTIONS = [
     {"q": "පහත ඒවායින් ඝන වස්තුවක් වන්නේ කුමක්ද?", "options": ["ත්‍රිකෝණය", "ඝනකය", "වෘත්තය"], "a": "ඝනකය"},
     {"q": "අඩුම අගයක් ඇති සංඛ්‍යාව: 102, 120, 201", "options": ["102", "120", "201"], "a": "102"},
     {"q": "5 x 10 හි පිළිතුර?", "options": ["15", "50", "500"], "a": "50"},
-    {"q": "මිනිත්තු 60 ක් යනු පැය කීයක්ද?", "options": ["1", "2", "6"], "a": "1"},
-    {"q": "ග්‍රෑම් 250 කට රුපියල් 100ක් නම් කිලෝ 1ක මිල කීයද?", "options": ["200", "400", "800"], "a": "400"},
-    {"q": "ඔබ ගණිතයට දක්ෂද?", "options": ["ඔව්", "ගොඩක්", "අනිවාර්යයෙන්ම"], "a": "අනිවාර්යයෙන්ම"}
-]
-
-# --- UI ආරම්භය ---
-st.markdown("<h1>🎓 Grade 4 - ගණිතය දක්ෂයා</h1>", unsafe_allow_html=True)
-st.markdown(f'<div class="score-container">ලකුණු: {st.session_state.score} / 50</div>', unsafe_allow_html=True)
-
-for i, q in enumerate(QUESTIONS):
-    st.markdown(f'''
-        <div class="q-card">
-            <div class="question-text">{i+1}. {q['q']}</div>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    # රේඩියෝ බොත්තම (label_visibility="collapsed" නිසා කළු කොටු එන්නේ නැත)
-    choice = st.radio(f"Select_{i}", q['options'], key=f"q_{i}", label_visibility="collapsed")
-    
-    if st.button(f"පිළිතුර තහවුරු කරන්න {i+1}", key=f"btn_{i}"):
-        if i not in st.session_state.answered:
-            if choice == q['a']:
-                st.success(f"නිවැරදියි! ✅")
-                st.session_state.score += 1
-            else:
-                st.error(f"වැරදියි! ❌ (නිවැරදි පිළිතුර: {q['a']})")
-            st.session_state.answered.add(i)
-        else:
-            st.warning("ඔබ දැනටමත් පිළිතුරු දී ඇත.")
-
-# --- අවසාන ප්‍රතිඵලය ---
-if len(st.session_state.answered) == 50:
-    st.balloons()
-    st.markdown(f"<h2 style='text-align:center; color:#facc15;'>🎉 සුභ පැතුම්! ඔබේ මුළු ලකුණු සංඛ්‍යාව: {st.session_state.score} / 50</h2>", unsafe_allow_html=True)
+    {"q": "මිනිත්තු 60 ක්
