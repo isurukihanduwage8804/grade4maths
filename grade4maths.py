@@ -3,49 +3,44 @@ import streamlit as st
 # 1. පිටුවේ මූලික සැකසුම්
 st.set_page_config(page_title="Grade 4 Maths Master", page_icon="🧮", layout="centered")
 
-# --- CSS Styling (SCORE කොටුව යටට ගෙන යන ලදි) ---
+# --- CSS Styling (තනි ප්‍රශ්නයක් පේන විදිහට) ---
 st.markdown("""
 <style>
     .stApp { background-color: #020617; }
     .q-card {
         background: #1e293b;
-        padding: 20px;
-        border-radius: 15px;
-        border-left: 10px solid #facc15;
-        margin-bottom: 25px;
+        padding: 30px;
+        border-radius: 20px;
+        border-top: 8px solid #facc15;
+        margin-top: 20px;
+        text-align: center;
+        box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
     }
-    .question-text { color: #ffffff; font-size: 26px; font-weight: bold; }
-    div[data-testid="stMarkdownContainer"] p { font-size: 24px !important; color: #facc15 !important; font-weight: bold; }
-    div[data-testid="stWidgetLabel"] p { font-size: 24px !important; color: #ffffff !important; }
+    .question-text { color: #ffffff; font-size: 32px; font-weight: bold; margin-bottom: 20px; }
+    div[data-testid="stMarkdownContainer"] p { font-size: 28px !important; color: #facc15 !important; font-weight: bold; }
+    div[data-testid="stWidgetLabel"] p { font-size: 28px !important; color: #ffffff !important; }
     
-    /* SCORE කොටුව පිටුවේ යටටම (Bottom) ස්ථාවරව තැබීම */
     .score-container {
-        position: fixed; 
-        bottom: 20px; 
-        right: 20px;
-        background: #ef4444; 
-        color: white; 
-        padding: 15px 25px;
-        border-radius: 12px; 
-        font-size: 24px; 
-        font-weight: bold;
-        z-index: 1000; 
-        border: 3px solid #ffffff;
-        box-shadow: 0px -5px 15px rgba(0,0,0,0.3);
+        position: fixed; bottom: 20px; right: 20px;
+        background: #ef4444; color: white; padding: 15px 25px;
+        border-radius: 12px; font-size: 24px; font-weight: bold;
+        z-index: 1000; border: 3px solid #ffffff;
     }
     
-    h1 { color: #facc15 !important; text-align: center; font-size: 40px !important; }
+    h1 { color: #facc15 !important; text-align: center; font-size: 45px !important; }
+    
     .stButton>button {
-        font-size: 20px !important; font-weight: bold !important;
-        background-color: #22c55e !important; color: white !important;
-        border-radius: 10px !important; height: 50px !important; width: 100% !important;
+        font-size: 24px !important; font-weight: bold !important;
+        border-radius: 12px !important; height: 60px !important; width: 100% !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# දත්ත මතක තබා ගැනීම
+# --- Session State (දත්ත රැක ගැනීමට) ---
+if 'q_idx' not in st.session_state: st.session_state.q_idx = 0
 if 'score' not in st.session_state: st.session_state.score = 0
-if 'answered' not in st.session_state: st.session_state.answered = {}
+if 'is_answered' not in st.session_state: st.session_state.is_answered = False
+if 'result_msg' not in st.session_state: st.session_state.result_msg = ""
 
 # --- ප්‍රශ්න 50 ---
 QUESTIONS = [
@@ -101,27 +96,51 @@ QUESTIONS = [
     ["ඔබ ගණිතයට දක්ෂද?", ["ඔව්", "ගොඩක්", "අනිවාර්යයෙන්ම"], "අනිවාර්යයෙන්ම"]
 ]
 
-# --- UI ---
+# --- UI Header ---
 st.markdown("<h1>🎓 Grade 4 Maths Master</h1>", unsafe_allow_html=True)
 st.markdown(f'<div class="score-container">SCORE: {st.session_state.score} / 50</div>', unsafe_allow_html=True)
 
-for i, item in enumerate(QUESTIONS):
-    q_text, opts, correct_ans = item[0], item[1], item[2]
-    st.markdown(f'<div class="q-card"><div class="question-text">{i+1}. {q_text}</div></div>', unsafe_allow_html=True)
-    
-    if i in st.session_state.answered:
-        is_cor, sel_opt = st.session_state.answered[i]
-        st.write(f"ඔබේ පිළිතුර: **{sel_opt}**")
-        if is_cor: st.success("නිවැරදියි! ✅")
-        else: st.error(f"වැරදියි! ❌ නිවැරදි පිළිතුර: {correct_ans}")
-    else:
-        choice = st.radio(f"S_{i}", opts, key=f"r_{i}", label_visibility="collapsed")
-        if st.button(f"CHECK ✅", key=f"b_{i}"):
-            is_cor = (choice == correct_ans)
-            if is_cor: st.session_state.score += 1
-            st.session_state.answered[i] = (is_cor, choice)
-            st.rerun()
-
-if len(st.session_state.answered) == 50:
+# සියලු ප්‍රශ්න ඉවර නම්
+if st.session_state.q_idx >= len(QUESTIONS):
     st.balloons()
-    st.markdown(f"<h2 style='text-align:center; color:#facc15;'>Final Score: {st.session_state.score} / 50</h2>", unsafe_allow_html=True)
+    st.markdown(f"<div class='q-card'><h2 style='color:#facc15;'>වැඩේ ඉවරයි! 🏆</h2><p style='color:white; font-size:30px;'>ඔබේ ලකුණු සංඛ්‍යාව: {st.session_state.score} / 50</p></div>", unsafe_allow_html=True)
+    if st.button("නැවත මුල සිට අරඹන්න 🔄"):
+        st.session_state.q_idx = 0
+        st.session_state.score = 0
+        st.session_state.is_answered = False
+        st.rerun()
+else:
+    # වත්මන් ප්‍රශ්නය
+    q_data = QUESTIONS[st.session_state.q_idx]
+    
+    st.markdown(f"""
+    <div class="q-card">
+        <div style="color:#facc15; font-size:20px; margin-bottom:10px;">Question {st.session_state.q_idx + 1} of 50</div>
+        <div class="question-text">{q_data[0]}</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # උත්තර තේරීම
+    if not st.session_state.is_answered:
+        choice = st.radio("පිළිතුර තෝරන්න:", q_data[1], key=f"radio_{st.session_state.q_idx}", label_visibility="collapsed")
+        
+        if st.button("CHECK ✅", type="primary"):
+            if choice == q_data[2]:
+                st.session_state.score += 1
+                st.session_state.result_msg = "correct"
+            else:
+                st.session_state.result_msg = f"wrong|{q_data[2]}"
+            st.session_state.is_answered = True
+            st.rerun()
+    else:
+        # ප්‍රතිඵලය පෙන්වීම
+        if st.session_state.result_msg == "correct":
+            st.success("නිවැරදියි! ✅")
+        else:
+            ans = st.session_state.result_msg.split("|")[1]
+            st.error(f"වැරදියි! ❌ නිවැරදි පිළිතුර: {ans}")
+            
+        if st.button("NEXT ➡️"):
+            st.session_state.q_idx += 1
+            st.session_state.is_answered = False
+            st.rerun()
